@@ -24,9 +24,9 @@
 #include "mbed-client/m2mobject.h"
 #include "mbed-client/m2mobjectinstance.h"
 #include "mbed-client/m2mresource.h"
-#include "minar/minar.h"
 #include "security.h"
 
+#include "wiced.h"
 
 //Select binding mode: UDP or TCP
 M2MInterface::BindingMode SOCKET_MODE = M2MInterface::UDP;
@@ -83,7 +83,7 @@ public:
 
     // debug printf function
     void trace_printer(const char* str) {
-        printf("\r\n%s\r\n", str);
+        WPRINT_APP_INFO( ("\r\n%s\r\n", str) );
     }
 
     /*
@@ -165,6 +165,21 @@ public:
         return device;
     }
 
+    void update_resource() {
+        if(_object) {
+            M2MObjectInstance* inst = _object->object_instance();
+            if(inst) {
+                M2MResource* res = inst->resource("D");
+                printf("Resource Value /Test/0/D : %d\n", _value);
+                char buffer[20];
+                int size = sprintf(buffer,"%d",_value);
+                res->set_value((const uint8_t*)buffer,
+                               (const uint32_t)size);
+                _value++;
+            }
+        }
+    }
+    
     /*
     * register an object
     */
@@ -213,8 +228,7 @@ public:
         trace_printer("Unregistered Object Successfully");
         _unregistered = true;
         _registered = false;
-        notify_completion(_unregistered);
-        minar::Scheduler::stop();
+//        notify_completion(_unregistered);
     }
 
     /*
@@ -225,7 +239,7 @@ public:
         *  mbed client stack. This print statement is turned off because it
         *  tends to happen alot.
         */
-        //trace_printer("\r\nRegistration Updated\r\n");
+        trace_printer("\r\nRegistration Updated\r\n");
     }
 
     // Callback from mbed client stack if any error is encountered

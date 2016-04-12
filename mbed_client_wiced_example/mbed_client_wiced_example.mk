@@ -11,6 +11,7 @@
 NAME := mbed-client_Application
 
 $(NAME)_SOURCES := app.cpp \
+	mbedtls/library/aes.c \
 	mbedtls/library/aesni.c \
 	mbedtls/library/arc4.c \
 	mbedtls/library/asn1parse.c \
@@ -113,10 +114,12 @@ $(NAME)_SOURCES := app.cpp \
 	mbed-client/source/m2mtlvdeserializer.cpp \
 	mbed-client/source/m2mtlvserializer.cpp \
 	mbed-client/source/nsdlaccesshelper.cpp \
+	mbed-client-wiced/source/m2mtimer.cpp \
 	mbed-client-wiced/source/m2mtimerpimpl.cpp \
-
-#	mbedtls/library/x509_crt.c \
-#	mbedtls/library/x509.c \
+	mbed-client-wiced/source/m2mconnectionhandler.cpp \
+	mbed-client-wiced/source/m2mconnectionhandlerpimpl.cpp \
+	mbedtls/library/x509_crt.c \
+	mbedtls/library/x509.c \
 
 GLOBAL_INCLUDES += mbedtls/include \
 	mbed_client_mbedtls \
@@ -130,4 +133,7 @@ GLOBAL_INCLUDES += mbedtls/include \
 	mbed-client/source \
 	mbed-client-wiced \
 
+GLOBAL_DEFINES +=
+
+CFLAGS := -nostdlib
 

@@ -29,6 +29,7 @@
 #include "mbed-client/m2mobject.h"
 #include "mbed-client/m2mobjectinstance.h"
 #include "mbed-client/m2mresource.h"
+#include "simpleclient.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,7 +63,10 @@ extern "C" {
  *               Variable Definitions
  ******************************************************/
 
-#if 0
+static wiced_thread_t unregister_thread;
+static wiced_thread_t observation_thread;
+static wiced_thread_t update_register_thread;
+
 // These are example resource values for the Device Object
 struct MbedClientDevice device = {
     "Manufacturer_String",      // Manufacturer
@@ -71,56 +75,90 @@ struct MbedClientDevice device = {
     "SerialNumber_String"       // SerialNumber
 };
 
-MbedClient mbed_client(device);
-#endif
-
 /******************************************************
  *               Function Definitions
  ******************************************************/
 
+void _gettimeofday()
+{
+}
+
+void wait_for_unregister(void* arg) {
+    MbedClient *client;
+    client = (MbedClient*) arg;
+/*    
+    if(client->unregister_successful()) {
+        printf("Unregistered done\n");
+
+        pthread_detach(update_register_thread);
+        pthread_detach(observation_thread);
+        pthread_detach(unregister_thread);
+
+        pthread_cancel(update_register_thread);
+        pthread_cancel(observation_thread);
+        pthread_cancel(unregister_thread);
+
+    }
+    */
+    return;
+}
+
+void send_observation(void* arg) {
+    MbedClient *client;
+    client = (MbedClient*) arg;
+    static uint8_t counter = 0;
+    while(1) {
+        wiced_rtos_delay_milliseconds(1 * 1000);
+
+        if(counter >= 10 &&
+           client->register_successful()) {
+            printf("Incrementing Resource Value\n");
+            client->update_resource();
+            counter = 0;
+        }
+        else
+            counter++;
+            
+    }
+    return;
+}
+
+void update_register(void* arg) {
+    MbedClient *client;
+    client = (MbedClient*) arg;
+    static uint8_t counter = 0;
+    while(1) {
+        wiced_rtos_delay_milliseconds(20 * 1000);
+        if(client->register_successful()) {
+            printf("Sending update register\n");
+            client->test_update_register();
+        }
+    }
+    return;
+}
+
 void application_start( )
 {
-    wiced_bool_t led1 = WICED_FALSE;
-    wiced_bool_t button1_pressed;
-
     /* Initialise the WICED device */
     wiced_init();
 
-//mbed_client.create_interface();
+    WPRINT_APP_INFO( ( "RedBear: mbed client demo for WICED\n" ) );
 
-    WPRINT_APP_INFO( ( "The RGB LEDs are flashing. Holding a button will force the corresponding LED on.\n" ) );
-
+    MbedClient mbed_client(device);
+    mbed_client.create_interface();
+    
+    // Create Objects of varying types, see simpleclient.h for more details on implementation.
+    M2MSecurity* register_object = mbed_client.create_register_object(); // server object specifying connector info
+    M2MDevice*   device_object   = mbed_client.create_device_object();   // device resources object
+        
+    WPRINT_APP_INFO( ("Registering endpoint\n") );
+  
+    wiced_rtos_create_thread(&observation_thread, WICED_DEFAULT_LIBRARY_PRIORITY, "observation_thread", (wiced_thread_function_t) send_observation, 3000, (MbedClient *) &mbed_client);
+    wiced_rtos_create_thread(&unregister_thread, WICED_DEFAULT_LIBRARY_PRIORITY, "unregister_thread", (wiced_thread_function_t) wait_for_unregister, 3000, (MbedClient *) &mbed_client);
+    wiced_rtos_create_thread(&update_register_thread, WICED_DEFAULT_LIBRARY_PRIORITY, "update_register_thread", (wiced_thread_function_t) update_register, 3000, (MbedClient *) &mbed_client);
+      
     while ( 1 )
     {
-        /* Read the state of Button 1 */
-        button1_pressed = wiced_gpio_input_get( BTN1 ) ? WICED_FALSE : WICED_TRUE;  /* The button has inverse logic */
-
-        if ( button1_pressed == WICED_TRUE )
-        {
-            /* Turn red LED on and turn green LED off */
-            wiced_gpio_output_low( LED_R );
-            wiced_gpio_output_high( LED_G );
-            wiced_gpio_output_high( LED_B );
-        }
-        else
-        {
-            /* Turn red LED off and toggle green led */
-            wiced_gpio_output_high( LED_R );
-            if ( led1 == WICED_TRUE )
-            {
-                wiced_gpio_output_low( LED_B );
-                wiced_gpio_output_high( LED_G );
-                led1 = WICED_FALSE;
-            }
-            else
-            {
-                wiced_gpio_output_high( LED_B );
-                wiced_gpio_output_low( LED_G );
-                led1 = WICED_TRUE;
-            }
-        }
-
-        wiced_rtos_delay_milliseconds( 300 );
     }
 }
 

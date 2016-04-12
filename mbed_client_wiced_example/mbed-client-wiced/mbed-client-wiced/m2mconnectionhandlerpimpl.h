@@ -24,20 +24,16 @@
 #include "mbed-client/m2mconstants.h"
 #include "nsdl-c/sn_nsdl.h"
 
-#include <pthread.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <signal.h> /* For SIGIGN and SIGINT */
-#include <unistd.h>
-#include <errno.h>
-
+class M2MConnectionSecurity;
 class M2MConnectionHandler;
+class M2MSecurity;
 
+/**
+ * @brief M2MConnectionHandlerPimpl.
+ * This class handles the socket connection for LWM2M Client
+ */
 class M2MConnectionHandlerPimpl {
+
 public:
 
     /**
@@ -118,40 +114,28 @@ public:
 
 public:
     void data_receive(void *object);
-
-
+    
 private:
-
-    void bind_ipv4_socket();
-    void bind_ipv6_socket();
-
-private:
-    M2MConnectionHandler                    *_base;
-    M2MConnectionObserver                   &_observer;
-    M2MConnectionSecurity                   *_security_impl; //owned
-    bool                                    _use_secure_connection;
-    String                                  _server_address;
-    char                                    _receive_buffer[BUFFER_LENGTH];
-    uint8_t                                 _resolved_address[INET6_ADDRSTRLEN];
-    M2MInterface::BindingMode               _binding_mode;
-    M2MInterface::NetworkStack              _stack;
-    uint8_t                                 _received_address[INET6_ADDRSTRLEN];
-    M2MConnectionObserver::SocketAddress    *_received_packet_address;
-    int                                     _socket_server;
-    struct sockaddr_in                      _sa_dst;
-    struct sockaddr_in                      _sa_src;
-    struct sockaddr_in6                     _sa_dst6;
-    struct sockaddr_in6                     _sa_src6;
-    int                                     _slen_sa_dst;
-    int                                     _slen_sa_dst6;
-    uint8_t                                 _received_buffer[BUFFER_LENGTH];
-    pthread_t                               _listen_thread; /* Thread for Listen data function */
-    volatile bool                           _receive_data;
-    uint16_t                                _listen_port;
-
+    M2MConnectionHandler                        *_base;
+    M2MConnectionObserver                       &_observer;
+    M2MConnectionSecurity                       *_security_impl; //owned
+    const M2MSecurity                           *_security; //Not owned
+    bool                                        _use_secure_connection;
+    String                                      _server_address;
+    unsigned char                               _receive_buffer[BUFFER_LENGTH];
+    M2MInterface::BindingMode                   _binding_mode;
+    M2MInterface::NetworkStack                  _network_stack;
+    uint8_t                                     _received_address[16];
+    M2MConnectionObserver::SocketAddress        *_socket_address;
+    M2MConnectionObserver::ServerType           _server_type;
+    uint16_t                                    _server_port;
+    bool                                        _resolved;
+    volatile bool                               _receive_data;
+    uint16_t                                    _listen_port;
+    
 friend class Test_M2MConnectionHandlerPimpl;
-friend class Test_M2MConnectionHandlerPimpl_linux;
+friend class Test_M2MConnectionHandlerPimpl_wiced;
 friend class M2MConnection_TestObserver;
 };
-#endif //M2M_CONNECTION_HANDLER_PIMPL_H__
 
+#endif //M2M_CONNECTION_HANDLER_PIMPL_H__
