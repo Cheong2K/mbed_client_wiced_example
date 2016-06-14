@@ -24,6 +24,8 @@
 #include "mbed-client/m2mconstants.h"
 #include "nsdl-c/sn_nsdl.h"
 
+#include "wiced.h"
+
 class M2MConnectionSecurity;
 class M2MConnectionHandler;
 class M2MSecurity;
@@ -130,8 +132,10 @@ private:
     M2MConnectionObserver::ServerType           _server_type;
     uint16_t                                    _server_port;
     bool                                        _resolved;
+    wiced_thread_t                              _listen_thread; /* Thread for Listen data function */    
     volatile bool                               _receive_data;
     uint16_t                                    _listen_port;
+    wiced_tcp_socket_t                          *socket;
     
 friend class Test_M2MConnectionHandlerPimpl;
 friend class Test_M2MConnectionHandlerPimpl_wiced;

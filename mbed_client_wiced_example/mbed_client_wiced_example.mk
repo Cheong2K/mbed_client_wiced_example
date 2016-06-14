@@ -118,6 +118,7 @@ $(NAME)_SOURCES := app.cpp \
 	mbed-client-wiced/source/m2mtimerpimpl.cpp \
 	mbed-client-wiced/source/m2mconnectionhandler.cpp \
 	mbed-client-wiced/source/m2mconnectionhandlerpimpl.cpp \
+	mbed-client-wiced/source/connthreadhelper.cpp \
 	mbedtls/library/x509_crt.c \
 	mbedtls/library/x509.c \
 

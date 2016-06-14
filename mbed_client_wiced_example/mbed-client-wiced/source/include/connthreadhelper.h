@@ -25,7 +25,7 @@ extern M2MConnectionHandlerPimpl *__connection_impl;
 extern "C" {
 #endif
 
-void* __listen_data_function(void*);
+void __listen_data_function(void*);
 
 #ifdef __cplusplus
 }

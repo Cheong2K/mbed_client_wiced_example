@@ -30,20 +30,32 @@ M2MConnectionHandlerPimpl::M2MConnectionHandlerPimpl(M2MConnectionHandler* base,
  _security_impl(sec),
  _use_secure_connection(false),
  _binding_mode(mode)
-{
+{    
+    __connection_impl = this;
+     
+    _socket_address = (M2MConnectionObserver::SocketAddress *)malloc(sizeof(M2MConnectionObserver::SocketAddress));
+    memset(_socket_address, 0, sizeof(M2MConnectionObserver::SocketAddress));
+    _socket_address->_address = _received_address;
+    
+    wiced_tcp_create_socket(socket, WICED_STA_INTERFACE);
 }
 
 M2MConnectionHandlerPimpl::~M2MConnectionHandlerPimpl()
 {
+    wiced_tcp_delete_socket(socket);
+    socket = NULL;
 }
 
 bool M2MConnectionHandlerPimpl::bind_connection(const uint16_t listen_port)
 {
     bool success = false;
-    if(_listen_port == 0) {
-         success = true;
-        _listen_port = listen_port;
+    
+    if (socket)
+    {
+        wiced_tcp_bind(socket, listen_port);
+        success = true;
     }
+    
     return success;
 }
 
@@ -54,9 +66,11 @@ bool M2MConnectionHandlerPimpl::resolve_server_address(const String& server_addr
 {
     wiced_ip_address_t address;
    
-   // ToDo 
- //   wiced_hostname_lookup(server_address, &)
-    return true;
+    char *c_str = const_cast<char*>(server_address.c_str());
+    if (wiced_hostname_lookup(c_str, &address, 1000))
+        return true;
+
+    return false;
 }
 
 bool M2MConnectionHandlerPimpl::start_listening_for_data()
@@ -65,7 +79,8 @@ bool M2MConnectionHandlerPimpl::start_listening_for_data()
     
     if (!_receive_data) {
         _receive_data = true;
-  //      wiced_rtos_create_thread(&_listen_thread, NULL,__listen_data_function, this);
+ 
+        wiced_rtos_create_thread(&_listen_thread, WICED_DEFAULT_LIBRARY_PRIORITY, NULL, (wiced_thread_function_t) __listen_data_function, 1024, (void *)this);
     }
     
     return success;
@@ -73,6 +88,9 @@ bool M2MConnectionHandlerPimpl::start_listening_for_data()
 
 int M2MConnectionHandlerPimpl::send_to_socket(const unsigned char *buf, size_t len)
 {
+    wiced_tcp_send_buffer(socket, buf, len);
+    
+    return 1;
 }
 
 int M2MConnectionHandlerPimpl::receive_from_socket(unsigned char *buf, size_t len)
@@ -82,12 +100,26 @@ int M2MConnectionHandlerPimpl::receive_from_socket(unsigned char *buf, size_t le
 
 void M2MConnectionHandlerPimpl::data_receive(void *object)
 {
+    WPRINT_APP_INFO( ("Data Received.\n") );
+    
+    //wiced_tcp_receive(socket, packet, WICED_NEVER_TIMEOUT);
 }
 
 bool M2MConnectionHandlerPimpl::send_data(uint8_t *data,
                                      uint16_t data_len,
                                      sn_nsdl_addr_s *address)
 {
+    uint16_t d_len = data_len+4;
+    uint8_t* d = (uint8_t*)malloc(data_len+4);
+
+    d[0] = (data_len >> 24 )& 0xff;
+    d[1] = (data_len >> 16 )& 0xff;
+    d[2] = (data_len >> 8 )& 0xff;
+    d[3] = data_len & 0xff;
+    memmove(d+4, data, data_len);
+            
+    wiced_tcp_send_buffer(socket, d, d_len);
+            
     return true;
 }
 

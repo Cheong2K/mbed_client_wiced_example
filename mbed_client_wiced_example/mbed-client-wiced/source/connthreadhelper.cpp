@@ -20,10 +20,9 @@
 
 M2MConnectionHandlerPimpl *__connection_impl = NULL;
 
-void* __listen_data_function(void* object)
+void __listen_data_function(void* object)
 {
-    if(__connection_impl) {
+    if (__connection_impl) {
        __connection_impl->data_receive(object);
     }
-    return NULL;
 }

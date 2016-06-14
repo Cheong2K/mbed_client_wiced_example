@@ -38,7 +38,6 @@ void my_timer_expired(void *t)
 {
     M2MTimerPimpl *timer = reinterpret_cast<M2MTimerPimpl *> (t);
 
-
     timer->_observer.timer_expired(timer->_type);
 
     if (!timer->_single_shot) {
